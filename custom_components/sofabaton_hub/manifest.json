@@ -10,21 +10,5 @@
   "requirements": [],
   "version": "1.0.2",
   "zeroconf": ["_sofabaton_hub._udp.local."],
-  "integration_type": "device",
-  "frontend": {
-    "resources": [
-      {
-        "type": "module",
-        "url": "/sofabaton_hub/www/main-card.js"
-      },
-      {
-        "type": "module",
-        "url": "/sofabaton_hub/www/detail-card.js"
-      },
-      {
-        "type": "js",
-        "url": "/sofabaton_hub/www/cards.js"
-      }
-    ]
-  }
+  "integration_type": "device"
 }
