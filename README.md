@@ -75,24 +75,6 @@ Before installing this integration, you **must** have an MQTT broker running in 
 
 ---
 
-### 📸 Screenshots
-
-> **Note**: Add screenshots of your setup here to help users visualize the interface.
-
-**Main Card - Activity Switcher:**
-- Shows all configured activities
-- Toggle switches to activate/deactivate activities
-- Current activity highlighted
-- Refresh button to reload data
-
-**Detail Card - Key Control:**
-- Tabbed interface for different key types
-- Visual key buttons with labels
-- Loading states during data fetch
-- Ripple effect on key press
-
----
-
 ### �📦 Installation
 
 #### Method 1: HACS (Recommended)
@@ -492,17 +474,78 @@ A: Yes, you can add multiple hubs by repeating the configuration process for eac
 A: The integration uses sequential requests to avoid overwhelming the hub. It may take a few seconds to load all keys (assigned, macro, and favorites). The frontend checks state every 5 seconds to ensure data is loaded.
 
 **Q: Can I use this with Home Assistant automations?**
-A: Yes! You can use the `remote.turn_on`, `remote.turn_off`, and `remote.send_command` services in your automations.
+A: Yes! You can use this integration in your automations in multiple ways:
 
-**Q: How do I send a specific key command in an automation?**
-A: Use the `remote.send_command` service with the key ID:
+1. **Using Switch entities** (Recommended for activity control):
+   - Each activity is automatically created as a switch entity
+   - Entity ID format: `switch.activity_name` (e.g., `switch.watch_tv`, `switch.gaming`)
+   - You can use these switches in automation triggers and actions
+
+   Example - Turn on an activity:
+   ```yaml
+   service: switch.turn_on
+   target:
+     entity_id: switch.watch_tv
+   ```
+
+   Example - Automation trigger when activity starts:
+   ```yaml
+   trigger:
+     - platform: state
+       entity_id: switch.watch_tv
+       to: "on"
+   action:
+     - service: light.turn_off
+       target:
+         entity_id: light.living_room
+   ```
+
+2. **Using Remote entity services**:
+   - `remote.turn_on` - Start an activity
+   - `remote.turn_off` - Stop current activity
+   - `remote.send_command` - Send key commands
+
+   Example - Send a key command:
+   ```yaml
+   service: remote.send_command
+   target:
+     entity_id: remote.sofabaton_hub_aabbccddeeff
+   data:
+     command: "174"  # Key ID
+   ```
+
+**Q: Can I trigger automations when a physical key is pressed on the remote?**
+A: Currently, the integration does not support detecting physical key presses from the Sofabaton remote. The integration can only **send** commands to the hub, not **receive** key press events.
+
+However, you can create automations that send key commands and trigger other actions simultaneously:
+
+Example - Send a key and show a notification:
 ```yaml
-service: remote.send_command
-target:
-  entity_id: remote.sofabaton_hub_aabbccddeeff
-data:
-  command: "174"  # Key ID
+automation:
+  - alias: "Test Key with Notification"
+    trigger:
+      - platform: state
+        entity_id: input_button.test_sofabaton_key  # Create a helper button
+        to: ~
+    action:
+      # Send the key command
+      - service: remote.send_command
+        target:
+          entity_id: remote.sofabaton_hub_aabbccddeeff
+        data:
+          command: "174"  # Your key ID
+      # Show notification
+      - service: notify.persistent_notification
+        data:
+          message: "xxxx"
+          title: "xxxxx"
 ```
+
+To create the helper button:
+1. Go to **Settings** → **Devices & Services** → **Helpers**
+2. Click **"+ Create Helper"** → **"Button"**
+3. Name it "Test Sofabaton Key"
+4. Use the entity `input_button.test_sofabaton_key` in your automation
 
 **Q: What's the difference between assigned keys, macro keys, and favorite keys?**
 A:
@@ -1080,17 +1123,78 @@ entity: remote.sofabaton_hub_aabbccddeeff
 答：集成使用串联请求以避免压垮 Hub。加载所有按键（分配、宏和收藏）可能需要几秒钟。前端每 5 秒检查一次状态以确保数据已加载。
 
 **问：我可以在 Home Assistant 自动化中使用此集成吗？**
-答：可以！您可以在自动化中使用 `remote.turn_on`、`remote.turn_off` 和 `remote.send_command` 服务。
+答：可以！您可以通过多种方式在自动化中使用此集成：
 
-**问：如何在自动化中发送特定按键命令？**
-答：使用 `remote.send_command` 服务并传递按键 ID：
+1. **使用开关实体**（推荐用于活动控制）：
+   - 每个活动会自动创建为一个开关实体
+   - 实体 ID 格式：`switch.活动名称`（例如：`switch.watch_tv`、`switch.gaming`）
+   - 您可以在自动化触发器和动作中使用这些开关
+
+   示例 - 打开一个活动：
+   ```yaml
+   service: switch.turn_on
+   target:
+     entity_id: switch.watch_tv
+   ```
+
+   示例 - 当活动启动时触发自动化：
+   ```yaml
+   trigger:
+     - platform: state
+       entity_id: switch.watch_tv
+       to: "on"
+   action:
+     - service: light.turn_off
+       target:
+         entity_id: light.living_room
+   ```
+
+2. **使用遥控器实体服务**：
+   - `remote.turn_on` - 启动活动
+   - `remote.turn_off` - 停止当前活动
+   - `remote.send_command` - 发送按键命令
+
+   示例 - 发送按键命令：
+   ```yaml
+   service: remote.send_command
+   target:
+     entity_id: remote.sofabaton_hub_aabbccddeeff
+   data:
+     command: "174"  # 按键 ID
+   ```
+
+**问：当遥控器上的物理按键被按下时，可以触发自动化吗？**
+答：目前，此集成不支持检测 Sofabaton 遥控器上的物理按键按下事件。集成只能**发送**命令到 Hub，不能**接收**按键按下事件。
+
+但是，您可以创建同时发送按键命令和触发其他动作的自动化：
+
+示例 - 发送按键并显示通知：
 ```yaml
-service: remote.send_command
-target:
-  entity_id: remote.sofabaton_hub_aabbccddeeff
-data:
-  command: "174"  # 按键 ID
+automation:
+  - alias: "测试按键并通知"
+    trigger:
+      - platform: state
+        entity_id: input_button.test_sofabaton_key  # 创建一个辅助按钮
+        to: ~
+    action:
+      # 发送按键命令
+      - service: remote.send_command
+        target:
+          entity_id: remote.sofabaton_hub_aabbccddeeff
+        data:
+          command: "174"  # 您的按键 ID
+      # 显示通知
+      - service: notify.persistent_notification
+        data:
+          message: "xxxx"
+          title: "xxxx
 ```
+
+创建辅助按钮的步骤：
+1. 进入 **设置** → **设备与服务** → **辅助工具**
+2. 点击 **"+ 创建辅助工具"** → **"按钮"**
+3. 命名为"测试 Sofabaton 按键"
+4. 在自动化中使用实体 `input_button.test_sofabaton_key`
 
 **问：分配按键、宏按键和收藏按键有什么区别？**
 答：
