@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-11-20
+
+### Changed
+- Updated HACS installation instructions (no need to add custom repository)
+- Simplified installation flow for new users
+- Updated both English and Chinese documentation
+
+### Fixed
+- Synced manifest.json version number with latest release
+
+---
+
+## [1.0.3] - 2025-11-03
+
+### Fixed
+- Removed invalid fields from hacs.json (iot_class, homeassistant)
+- Fixed manifest.json field ordering for HACS validation
+
+---
+
+## [1.0.2] - 2025-11-03
+
+### Added
+- Switch entity platform for activity control
+- Comprehensive automation examples in README
+- FAQ section about physical key press detection
+- Helper button automation examples
+
+### Changed
+- Updated manifest.json repository URLs
+- Improved README structure
+- Enhanced documentation clarity
+
+### Fixed
+- Repository URL consistency across all files
+
+---
+
+## [1.0.1] - 2025-10-14
+
+### Added
+- Integration icons (icon.png, icon@2x.png)
+- Logo files (logo.png, logo@2x.png)
+
+### Changed
+- Configured integration_type: device in manifest
+- Set entity icon to mdi:remote
+
+---
+
 ## [1.0.0] - 2025-10-14
 
 ### Added
