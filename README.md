@@ -81,11 +81,9 @@ Before installing this integration, you **must** have an MQTT broker running in 
 
 1. Open HACS in Home Assistant
 2. Click on "Integrations"
-3. Click the three dots in the top right corner
-4. Select "Custom repositories"
-5. Add this repository URL and select "Integration" as the category
-6. Click "Install"
-7. Restart Home Assistant
+3. Search for "Sofabaton Hub"
+4. Click "Install"
+5. Restart Home Assistant
 
 #### Method 2: Manual Installation
 
@@ -724,11 +722,9 @@ This project is licensed under the MIT License.
 
 1. 在 Home Assistant 中打开 HACS
 2. 点击"集成"
-3. 点击右上角的三个点
-4. 选择"自定义存储库"
-5. 添加此存储库 URL 并选择"集成"作为类别
-6. 点击"安装"
-7. 重启 Home Assistant
+3. 搜索"Sofabaton Hub"
+4. 点击"安装"
+5. 重启 Home Assistant
 
 #### 方法 2：手动安装
 
