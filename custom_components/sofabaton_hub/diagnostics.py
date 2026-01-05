@@ -147,6 +147,11 @@ def _get_coordinator_state_diagnostics(
     Returns:
         Dictionary containing coordinator state information
     """
+    update_interval = getattr(coordinator, "update_interval", None)
+    update_interval_seconds = (
+        update_interval.total_seconds() if update_interval else None
+    )
+
     return {
         "last_update_success": coordinator.last_update_success,
         "last_update_time": (
@@ -154,11 +159,8 @@ def _get_coordinator_state_diagnostics(
             if coordinator.last_update_success_time
             else None
         ),
-        "update_interval": (
-            coordinator.update_interval.total_seconds()
-            if coordinator.update_interval
-            else None
-        ),
+        "update_interval": update_interval_seconds,
+        "update_interval_seconds": update_interval_seconds,
         # Request state information
         "has_basic_data_request": bool(
             getattr(coordinator, "_basic_data_request_state", None)
