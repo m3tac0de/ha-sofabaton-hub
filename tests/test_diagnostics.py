@@ -1,6 +1,7 @@
 """Test the Sofabaton Hub diagnostics."""
 from __future__ import annotations
 
+from datetime import timedelta
 import pytest
 from homeassistant.core import HomeAssistant
 
@@ -83,6 +84,8 @@ async def test_diagnostics_coordinator_state(
     
     # Should have update interval
     assert "update_interval" in coordinator_state
+    # Should have explicit update interval seconds field
+    assert "update_interval_seconds" in coordinator_state
 
 
 async def test_diagnostics_use_stored_coordinator(
@@ -93,7 +96,7 @@ async def test_diagnostics_use_stored_coordinator(
     """Diagnostics should use the coordinator stored in hass.data."""
     mock_coordinator.last_update_success = True
     mock_coordinator.last_update_success_time = None
-    mock_coordinator.update_interval = None
+    mock_coordinator.update_interval = timedelta(seconds=120)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][mock_config_entry.entry_id] = {
@@ -104,3 +107,5 @@ async def test_diagnostics_use_stored_coordinator(
     diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
 
     assert diagnostics["coordinator_state"]["last_update_success"] is True
+    assert diagnostics["coordinator_state"]["update_interval"] == 120
+    assert diagnostics["coordinator_state"]["update_interval_seconds"] == 120
