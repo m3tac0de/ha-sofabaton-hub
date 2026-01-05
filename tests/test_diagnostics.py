@@ -4,6 +4,7 @@ from __future__ import annotations
 import pytest
 from homeassistant.core import HomeAssistant
 
+from custom_components.sofabaton_hub.const import DOMAIN
 from custom_components.sofabaton_hub.diagnostics import (
     async_get_config_entry_diagnostics,
 )
@@ -81,5 +82,25 @@ async def test_diagnostics_coordinator_state(
     assert "last_update_success" in coordinator_state
     
     # Should have update interval
-    assert "update_interval_seconds" in coordinator_state
+    assert "update_interval" in coordinator_state
 
+
+async def test_diagnostics_use_stored_coordinator(
+    hass: HomeAssistant,
+    mock_config_entry,
+    mock_coordinator,
+) -> None:
+    """Diagnostics should use the coordinator stored in hass.data."""
+    mock_coordinator.last_update_success = True
+    mock_coordinator.last_update_success_time = None
+    mock_coordinator.update_interval = None
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][mock_config_entry.entry_id] = {
+        "coordinator": mock_coordinator,
+        "api_client": object(),
+    }
+
+    diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
+
+    assert diagnostics["coordinator_state"]["last_update_success"] is True
