@@ -22,7 +22,8 @@ async def async_get_config_entry_diagnostics(
     Returns:
         Dictionary containing diagnostic information with sensitive data redacted
     """
-    coordinator: SofabatonHubDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    entry_data = hass.data[DOMAIN][entry.entry_id]
+    coordinator: SofabatonHubDataUpdateCoordinator = entry_data["coordinator"]
     
     # Get coordinator data
     data = coordinator.data or {}
@@ -172,4 +173,3 @@ def _get_coordinator_state_diagnostics(
         ),
         "pending_updates_count": len(getattr(coordinator, "_pending_updates", set())),
     }
-
