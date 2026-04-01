@@ -25,6 +25,7 @@ from .const import (
     TOPIC_ACTIVITY_MACRO_KEY_CONTROL,
     TOPIC_ACTIVITY_MACRO_LIST,
     TOPIC_ACTIVITY_MACRO_REQUEST,
+    TOPIC_SUBSCRIPTION_BARRIER,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ class SofabatonHubApiClient:
         self.mac: str = entry.data[CONF_MAC]
         self._on_message_callback: Callable[[str, dict[str, Any]], None] | None = None
         self._request_lock = asyncio.Lock()
+        self._barrier_unsub: Callable[[], None] | None = None
 
     def set_on_message_callback(self, func: Callable[[str, dict[str, Any]], None]) -> None:
         """Set callback function to be called when MQTT message is received.
@@ -130,13 +132,82 @@ class SofabatonHubApiClient:
             # Uncomment below when re-enabling device support
             # TOPIC_DEVICE_KEYS_LIST,
             TOPIC_ACTIVITY_MACRO_LIST,
+            # Barrier topic must be last — used by async_verify_subscriptions()
+            # to confirm all preceding subscriptions are active
+            TOPIC_SUBSCRIPTION_BARRIER,
         ]
 
         for topic_template in topics_to_subscribe:
             topic = self._get_topic(topic_template)
             _LOGGER.info("Subscribing to topic: %s", topic)
-            # Subscribe to topic and specify callback function for message arrival
-            await mqtt.async_subscribe(self.hass, topic, self._message_received)
+            unsub = await mqtt.async_subscribe(self.hass, topic, self._message_received)
+            # Keep the barrier unsubscribe callback so we can remove it after
+            # verification — it's only needed during startup.
+            if topic_template == TOPIC_SUBSCRIPTION_BARRIER:
+                self._barrier_unsub = unsub
+
+    async def async_verify_subscriptions(self) -> None:
+        """Verify MQTT subscriptions are active using a self-loopback barrier.
+
+        Publishes a message to the barrier topic and waits for it to arrive
+        back through the subscription. Since all topics are subscribed
+        sequentially and the barrier topic is last, receiving the loopback
+        confirms the broker has processed all subscriptions.
+
+        After verification, the barrier subscription is removed so it does not
+        generate unexpected messages during normal operation.
+
+        This must be called after async_subscribe_to_topics() and before
+        setting the coordinator's message callback or publishing any requests.
+        """
+        barrier_topic = self._get_topic(TOPIC_SUBSCRIPTION_BARRIER)
+        barrier_received = asyncio.Event()
+
+        # Temporarily set a barrier callback to detect the loopback.
+        # No coordinator callback is set yet at this point in the startup
+        # sequence, so we own _on_message_callback exclusively.
+        def _barrier_check(topic: str, payload: dict) -> None:
+            if topic == barrier_topic and payload.get("status") == "ready":
+                barrier_received.set()
+
+        self._on_message_callback = _barrier_check
+
+        # Publish a retained barrier message. Retained is essential here:
+        # the broker delivers retained messages to subscribers when their
+        # subscription is confirmed (SUBACK). A non-retained message would
+        # only reach already-confirmed subscribers, defeating the purpose.
+        _LOGGER.debug("Publishing subscription barrier to %s", barrier_topic)
+        await mqtt.async_publish(
+            self.hass,
+            barrier_topic,
+            json.dumps({"status": "ready"}),
+            retain=True,
+        )
+
+        try:
+            async with asyncio.timeout(5.0):
+                await barrier_received.wait()
+            _LOGGER.info("MQTT subscriptions verified via barrier loopback")
+        except TimeoutError:
+            _LOGGER.warning(
+                "MQTT subscription barrier timed out after 5s, proceeding anyway"
+            )
+        finally:
+            # Clear the temporary callback; the coordinator callback will be
+            # set by __init__.py after this method returns.
+            self._on_message_callback = None
+
+            # Unsubscribe from the barrier topic — it's only needed during
+            # startup verification and would generate spurious messages if
+            # left active during normal operation.
+            if self._barrier_unsub:
+                self._barrier_unsub()
+                self._barrier_unsub = None
+
+            # Clear the retained barrier message from the broker so it doesn't
+            # linger between restarts. Publishing an empty payload with retain
+            # tells the broker to delete the retained message.
+            await mqtt.async_publish(self.hass, barrier_topic, "", retain=True)
 
     # --- Request publishing methods ---
 
